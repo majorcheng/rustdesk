@@ -69,7 +69,9 @@ impl Default for Config {
             cursor: false,
             letterbox: true,
             throttle: 0.0,
-            queue_length: 3,
+            // One slot of backlog is the whole point: the handler above keeps only the newest
+            // frame, so any extra queue depth is pure added latency in front of the encoder.
+            queue_length: 1,
         }
     }
 }
