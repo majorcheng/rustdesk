@@ -110,7 +110,7 @@ impl Capturer {
 
         if res.is_err() {
             gdi_capturer = display.create_gdi();
-            println!("Fallback to GDI");
+            hbb_common::log::info!("dxgi: fall back to gdi, D3D11 device creation failed: {res:?}");
             if gdi_capturer.is_some() {
                 res = Ok(());
             }
@@ -119,7 +119,9 @@ impl Capturer {
                 let hres = Self::duplicate_output(&display, device.0, &mut duplication);
                 if hres != S_OK {
                     gdi_capturer = display.create_gdi();
-                    println!("Fallback to GDI");
+                    hbb_common::log::info!(
+                        "dxgi: fall back to gdi, duplicate output failed: {hres}"
+                    );
                     if gdi_capturer.is_some() {
                         S_OK
                     } else {
