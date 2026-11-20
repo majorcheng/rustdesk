@@ -9,6 +9,8 @@ pub type CFBooleanRef = *mut c_void;
 pub type CFNumberRef = *mut c_void;
 pub type CFStringRef = *mut c_void;
 pub type CGDisplayStreamUpdateRef = *mut c_void;
+pub type CGDisplayModeRef = *mut c_void;
+pub type CFArrayRef = *mut c_void;
 pub type IOSurfaceRef = *mut c_void;
 pub type DispatchQueue = *mut c_void;
 pub type DispatchQueueAttr = *mut c_void;
@@ -34,6 +36,9 @@ macro_rules! pixel_format {
 
 pub const SURFACE_LOCK_READ_ONLY: u32 = 0x0000_0001;
 pub const SURFACE_LOCK_AVOID_SYNC: u32 = 0x0000_0002;
+
+// kDisplayModeNativeFlag, from <IOKit/graphics/IOGraphicsTypes.h>
+pub const DISPLAY_MODE_NATIVE_FLAG: u32 = 0x0200_0000;
 
 pub fn cfbool(x: bool) -> CFBooleanRef {
     unsafe {
@@ -195,6 +200,11 @@ extern "C" {
     pub fn CGDisplayBounds(display: u32) -> CGRect;
     pub fn BackingScaleFactor(display: u32) -> f32;
 
+    pub fn CGDisplayCopyAllDisplayModes(display: u32, options: CFDictionaryRef) -> CFArrayRef;
+    pub fn CGDisplayModeGetIOFlags(mode: CGDisplayModeRef) -> u32;
+    pub fn CGDisplayModeGetPixelWidth(mode: CGDisplayModeRef) -> usize;
+    pub fn CGDisplayModeGetPixelHeight(mode: CGDisplayModeRef) -> usize;
+
     // IOSurface
 
     pub fn IOSurfaceGetAllocSize(buffer: IOSurfaceRef) -> usize;
@@ -238,4 +248,7 @@ extern "C" {
 
     pub fn CFRetain(cf: *const c_void);
     pub fn CFRelease(cf: *const c_void);
+
+    pub fn CFArrayGetCount(array: CFArrayRef) -> i64;
+    pub fn CFArrayGetValueAtIndex(array: CFArrayRef, idx: i64) -> *const c_void;
 }
