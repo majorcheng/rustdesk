@@ -5,7 +5,7 @@ use super::ffi::*;
 pub struct Frame {
     surface: IOSurfaceRef,
     inner: &'static [u8],
-    bgra: Vec<u8>,
+    bgra: &'static [u8],
     bgra_stride: usize,
 }
 
@@ -24,7 +24,7 @@ impl Frame {
         Frame {
             surface,
             inner,
-            bgra: Vec::new(),
+            bgra: &[],
             bgra_stride: 0,
         }
     }
@@ -38,16 +38,20 @@ impl Frame {
         self.bgra_stride
     }
 
-    pub fn surface_to_bgra<'a>(&'a mut self, h: usize) {
+    // Views plane 0 in place. The surface stays locked and retained by `Frame`, so the
+    // view is valid until `Drop`; a copy per frame is not needed.
+    pub fn surface_to_bgra(&mut self, h: usize) {
         unsafe {
-            let plane0 = IOSurfaceGetBaseAddressOfPlane(self.surface, 0);
-            self.bgra_stride = IOSurfaceGetBytesPerRowOfPlane(self.surface, 0);
-            self.bgra.resize(self.bgra_stride * h, 0);
-            std::ptr::copy_nonoverlapping(
-                plane0 as _,
-                self.bgra.as_mut_ptr(),
-                self.bgra_stride * h,
-            );
+            let plane0 = IOSurfaceGetBaseAddressOfPlane(self.surface, 0) as *const u8;
+            let stride = IOSurfaceGetBytesPerRowOfPlane(self.surface, 0);
+            let len = stride.saturating_mul(h);
+            if plane0.is_null() || len == 0 || len > IOSurfaceGetAllocSize(self.surface) {
+                self.bgra = &[];
+                self.bgra_stride = 0;
+                return;
+            }
+            self.bgra_stride = stride;
+            self.bgra = slice::from_raw_parts(plane0, len);
         }
     }
 }
@@ -55,7 +59,7 @@ impl Frame {
 impl ops::Deref for Frame {
     type Target = [u8];
     fn deref<'a>(&'a self) -> &'a [u8] {
-        &self.bgra
+        self.bgra
     }
 }
 
