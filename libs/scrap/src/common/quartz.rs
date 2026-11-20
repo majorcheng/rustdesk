@@ -6,7 +6,6 @@ use std::{io, mem};
 pub struct Capturer {
     inner: quartz::Capturer,
     frame: Arc<Mutex<Option<quartz::Frame>>>,
-    saved_raw_data: Vec<u8>, // for faster compare and copy
 }
 
 impl Capturer {
@@ -28,11 +27,7 @@ impl Capturer {
         )
         .map_err(|_| io::Error::from(io::ErrorKind::Other))?;
 
-        Ok(Capturer {
-            inner,
-            frame,
-            saved_raw_data: Vec::new(),
-        })
+        Ok(Capturer { inner, frame })
     }
 
     pub fn width(&self) -> usize {
@@ -53,7 +48,6 @@ impl crate::TraitCapturer for Capturer {
 
                 match frame {
                     Some(mut frame) => {
-                        crate::would_block_if_equal(&mut self.saved_raw_data, frame.inner())?;
                         frame.surface_to_bgra(self.height());
                         Ok(Frame::PixelBuffer(PixelBuffer {
                             frame,
